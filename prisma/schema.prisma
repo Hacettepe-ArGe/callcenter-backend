@@ -4,18 +4,80 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model Worker {
+  id         Int        @id @default(autoincrement())
+  name       String     // İsim alanı ekledik
+  createdAt  DateTime   @default(now())
+  company    Company?    @relation(fields: [companyId], references: [id])
+  companyId  Int?
+  emissions  Emission[]
+  department String?
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+model Company {
+  id               Int               @id @default(autoincrement())
+  name             String
+  workers          Worker[]
+  emissions        Emission[]
+  email            String            @unique
+  password         String
+  createdAt        DateTime          @default(now())
+  totalCarbon      Float             @default(0)
+  monthlyEmissions MonthlyEmission[]
+}
+
+model MonthlyEmission {
+  id          Int      @id @default(autoincrement())
+  month       DateTime
+  totalCarbon Float    @default(0)
+  company     Company  @relation(fields: [companyId], references: [id])
+  companyId   Int
+}
+
+model Emission {
+  id          Int          @id @default(autoincrement())
+  type        EmissionType // Enum kullanıyoruz
+  category    String
+  amount      Float // Miktar
+  unit        String // Birim (M3, KWH, KM, SAAT, KG)
+  carbonValue Float // Hesaplanan karbon değeri (KG_CO2)
+  cost        Float? // Maliyet (varsa)
+  date        DateTime     @default(now())
+  scope       EmissionScope // Scope alanını ekledik
+  worker      Worker?      @relation(fields: [workerId], references: [id])
+  workerId    Int?
+  company     Company?     @relation(fields: [companyId], references: [id])
+  companyId   Int?
+}
+
+model EmissionFactor {
+  id             Int           @id @default(autoincrement())
+  type           EmissionType
+  category       String // su, elektrik, dogalgaz, elektrik_otomobil vb.
+  emissionFactor Float // Emisyon faktörü
+  unit           String // KG_CO2/M3, KG_CO2/KWH vb.
+  price          Float? // Birim fiyat
+  priceUnit      String? // TL/M3, TL/KWH vb.
+  scope          EmissionScope // SIRKET veya CALISAN
+}
+
+enum EmissionType {
+  FATURA
+  ULASIM
+  SAAT_GIRDILI
+  KG_GIRDILI
+}
+
+enum EmissionScope {
+  SIRKET
+  CALISAN
 }
