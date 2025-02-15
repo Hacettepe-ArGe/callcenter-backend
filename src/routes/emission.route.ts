@@ -1,16 +1,18 @@
-import { Router } from 'express'
-import { calculateEmission, getEmissionFactors } from '../controllers/emission.controller'
-import { authenticateJWT } from '../middlewares/auth.middleware'
+import { Router, Response, NextFunction } from 'express'
+import { calculateEmission, getEmissionFactors, getTotalEmissions } from '../controllers/emission.controller'
+import { AuthRequest, authenticateJWT } from '../middlewares/auth.middleware'
+import { validateEmissionCalculation, validateScope } from '../middlewares/emission.middleware'
 
 const router = Router()
 
-router.post('/calculate', (req, res, next) => {
-  calculateEmission(req, res)
-  return
-})
-router.get('/factors/:scope', (req, res, next) => {
-  getEmissionFactors(req, res)
-  return
-})
+router.post('/calculate', 
+  calculateEmission
+)
+
+router.get('/factors/:scope',
+  getEmissionFactors
+)
+
+router.get('/total/:companyId', getTotalEmissions)
 
 export default router
