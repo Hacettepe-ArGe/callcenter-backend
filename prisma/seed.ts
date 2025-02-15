@@ -9,8 +9,6 @@ async function main() {
   // Clear existing data
   await prisma.emission.deleteMany()
   await prisma.worker.deleteMany()
-  await prisma.monthlyEmission.deleteMany()
-  await prisma.yearlyEmissionBreakdown.deleteMany()
   await prisma.company.deleteMany()
   await prisma.emissionFactor.deleteMany()
 
@@ -175,20 +173,6 @@ async function main() {
       other: (5 + Math.random() * 2) * 1.2 * 10
     }
 
-    // Create yearly breakdown record for each month
-    await prisma.yearlyEmissionBreakdown.create({
-      data: {
-        companyId: company.id,
-        year: currentYear,
-        month: month,
-        electricity: monthlyTotals.electricity,
-        naturalGas: monthlyTotals.naturalGas,
-        vehicles: monthlyTotals.vehicles,
-        waste: monthlyTotals.waste,
-        other: monthlyTotals.other,
-        total: Object.values(monthlyTotals).reduce((a, b) => a + b, 0)
-      }
-    })
 
     // Also update the corresponding emissions to match
     await prisma.emission.create({

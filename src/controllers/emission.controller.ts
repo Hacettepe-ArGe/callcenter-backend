@@ -234,12 +234,12 @@ export const updateUserEmission = async (
     const { id } = req.params; // emission id
     const { type, category, amount, scope } = req.body;
     const companyId = (req as AuthRequest).user?.companyId;
-
+    console.log(companyId)
     if (!companyId) {
       res.status(400).json({ error: 'Şirket bilgisi bulunamadı' });
       return;
     }
-
+    console.log(id)
     const emission = await emissionService.updateWorkerEmission(
       parseInt(id),
       companyId,
@@ -250,7 +250,6 @@ export const updateUserEmission = async (
         scope: scope as EmissionScope
       }
     );
-
     res.status(200).json({
       success: true,
       data: emission
@@ -411,24 +410,6 @@ export const createEmission = async (req: Request, res: Response) => {
     const monthStart = new Date(date);
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
-
-    await prisma.monthlyEmission.upsert({
-      where: {
-        companyId_month: {
-          companyId: parseInt(emissionData.companyId),
-          month: monthStart
-        }
-      },
-      create: {
-        companyId: parseInt(emissionData.companyId),
-        month: monthStart,
-        totalCarbon: carbonValue
-      },
-      update: {
-        totalCarbon: { increment: carbonValue }
-      }
-    });
-
     res.json(emission);
   } catch (error) {
     console.error('Create emission error:', error);

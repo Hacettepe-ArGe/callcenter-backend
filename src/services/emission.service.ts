@@ -75,46 +75,10 @@ export class EmissionService {
           companyId: companyId
         }
       });
-
       // Toplam karbon değerini hesapla
       const totalCarbon = emissions.reduce((total, emission) => {
         return total + Number(emission.carbonValue);
       }, 0);
-      
-      // Mevcut ay için kayıt oluştur veya güncelle
-      const currentDate = new Date();
-      const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-
-      // Mevcut ay için kayıt var mı kontrol et
-      const existingMonthlyEmission = await prisma.monthlyEmission.findFirst({
-        where: {
-          companyId: companyId,
-          month: firstDayOfMonth
-        }
-      });
-
-      if (existingMonthlyEmission) {
-        // Varsa güncelle
-        await prisma.monthlyEmission.update({
-          where: {
-            id: existingMonthlyEmission.id
-          },
-          data: {
-            totalCarbon: totalCarbon
-          }
-        });
-      } else {
-        // Yoksa yeni kayıt oluştur
-        await prisma.monthlyEmission.create({
-          data: {
-            month: firstDayOfMonth,
-            totalCarbon: totalCarbon,
-            companyId: companyId
-          }
-        });
-      }
-      
-      // Şirketin toplam karbon değerini güncelle
       await prisma.company.update({
         where: {
           id: companyId
@@ -297,37 +261,6 @@ export class EmissionService {
             totalCarbon
           }
         });
-
-        // Mevcut ay için MonthlyEmission güncelle veya oluştur
-        const currentDate = new Date();
-        const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-
-        const existingMonthlyEmission = await prisma.monthlyEmission.findFirst({
-          where: {
-            companyId,
-            month: firstDayOfMonth
-          }
-        });
-
-        if (existingMonthlyEmission) {
-          await prisma.monthlyEmission.update({
-            where: {
-              id: existingMonthlyEmission.id
-            },
-            data: {
-              totalCarbon
-            }
-          });
-        } else {
-          await prisma.monthlyEmission.create({
-            data: {
-              month: firstDayOfMonth,
-              totalCarbon,
-              companyId
-            }
-          });
-        }
-
         return emission;
       });
     } catch (error) {
@@ -357,11 +290,9 @@ export class EmissionService {
             companyId
           }
         });
-
         if (!emission) {
           throw new Error('Emisyon kaydı bulunamadı');
         }
-
         const emissionFactor = await prisma.emissionFactor.findFirst({
           where: {
             type: data.type,
@@ -413,37 +344,6 @@ export class EmissionService {
             totalCarbon
           }
         });
-
-        // Mevcut ay için MonthlyEmission güncelle
-        const currentDate = new Date();
-        const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-
-        const existingMonthlyEmission = await prisma.monthlyEmission.findFirst({
-          where: {
-            companyId,
-            month: firstDayOfMonth
-          }
-        });
-
-        if (existingMonthlyEmission) {
-          await prisma.monthlyEmission.update({
-            where: {
-              id: existingMonthlyEmission.id
-            },
-            data: {
-              totalCarbon
-            }
-          });
-        } else {
-          await prisma.monthlyEmission.create({
-            data: {
-              month: firstDayOfMonth,
-              totalCarbon,
-              companyId
-            }
-          });
-        }
-
         return updatedEmission;
       });
     } catch (error) {
