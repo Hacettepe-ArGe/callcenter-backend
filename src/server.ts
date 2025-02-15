@@ -2,6 +2,11 @@ import express from "express";
 import dotenv from "dotenv";
 import authRoutes from './routes/auth.route';
 import emissionRoutes from './routes/emission.route'
+import { PrismaClient } from '@prisma/client';
+import dashboardRoutes from './routes/dashboard.route';
+
+const prisma = new PrismaClient();
+
 // get current mode
 const mode = process.env.NODE_ENV || 'development';
 
@@ -24,6 +29,22 @@ app.get("/", (req, res) => {
 
 app.use('/api/emissions', emissionRoutes)
 app.use('/api/auth', authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
+interface DashboardStats {
+  daily: {
+    totalCarbon: number;
+    date: string;
+  };
+  monthly: {
+    totalCarbon: number;
+    month: string;
+  };
+  yearly: {
+    totalCarbon: number;
+    year: string;
+  };
+}
 
 // Listen on port
 app.listen(PORT, () => {

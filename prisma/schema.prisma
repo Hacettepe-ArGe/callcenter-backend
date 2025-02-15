@@ -33,30 +33,41 @@ model Company {
   createdAt        DateTime          @default(now())
   totalCarbon      Float             @default(0)
   monthlyEmissions MonthlyEmission[]
+  yearlyBreakdowns YearlyEmissionBreakdown[]
 }
 
 model MonthlyEmission {
   id          Int      @id @default(autoincrement())
   month       DateTime
-  totalCarbon Float    @default(0)
+  totalCarbon Decimal @db.Decimal(10, 2)
   company     Company  @relation(fields: [companyId], references: [id])
   companyId   Int
+
+  @@unique([companyId, month], name: "companyId_month")
+  @@index([month])
 }
 
 model Emission {
   id          Int          @id @default(autoincrement())
-  type        EmissionType // Enum kullanıyoruz
+  type        EmissionType
   category    String
-  amount      Float // Miktar
-  unit        String // Birim (M3, KWH, KM, SAAT, KG)
-  carbonValue Float // Hesaplanan karbon değeri (KG_CO2)
-  cost        Float? // Maliyet (varsa)
+  amount      Decimal @db.Decimal(10, 2)
+  unit        String
+  carbonValue Decimal @db.Decimal(10, 2)
+  cost        Decimal? @db.Decimal(10, 2)
   date        DateTime     @default(now())
-  scope       EmissionScope // Scope alanını ekledik
+  scope       EmissionScope
   worker      Worker?      @relation(fields: [workerId], references: [id])
   workerId    Int?
   company     Company?     @relation(fields: [companyId], references: [id])
   companyId   Int?
+  source      String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([date])
+  @@index([companyId])
+  @@index([workerId])
 }
 
 model EmissionFactor {
@@ -68,6 +79,24 @@ model EmissionFactor {
   price          Float? // Birim fiyat
   priceUnit      String? // TL/M3, TL/KWH vb.
   scope          EmissionScope // SIRKET veya CALISAN
+}
+
+// New model for yearly aggregated data
+model YearlyEmissionBreakdown {
+  id        Int      @id @default(autoincrement())
+  year      Int
+  month     Int      // 1-12
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId Int
+  // Breakdown by source
+  electricity Decimal @default(0) @db.Decimal(10, 2)
+  naturalGas  Decimal @default(0) @db.Decimal(10, 2)
+  vehicles    Decimal @default(0) @db.Decimal(10, 2)
+  waste       Decimal @default(0) @db.Decimal(10, 2)
+  other       Decimal @default(0) @db.Decimal(10, 2)
+  total       Decimal @default(0) @db.Decimal(10, 2)
+
+  @@unique([companyId, year, month])
 }
 
 enum EmissionType {
