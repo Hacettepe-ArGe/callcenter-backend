@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.route';
 import emissionRoutes from './routes/emission.route'
 import { PrismaClient } from '@prisma/client';
 import dashboardRoutes from './routes/dashboard.route';
+import { WebServer } from './utils/webServer';
 import workerRoutes from './routes/worker.route'
 
 const prisma = new PrismaClient();
@@ -49,3 +50,5 @@ app.use('/api/workers', workerRoutes)
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+new WebServer();

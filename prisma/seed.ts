@@ -6,11 +6,14 @@ import * as bcrypt from 'bcrypt'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Clear existing data
-  await prisma.emission.deleteMany()
-  await prisma.worker.deleteMany()
-  await prisma.company.deleteMany()
-  await prisma.emissionFactor.deleteMany()
+  // Clear all existing data in the correct order
+  console.log('Clearing existing database data...')
+  await prisma.$transaction([
+    prisma.emission.deleteMany(),
+    prisma.worker.deleteMany(),
+    prisma.emissionFactor.deleteMany(),
+    prisma.company.deleteMany(),
+  ])
 
   // First seed emission factors from JSON
   const emissionData = JSON.parse(
@@ -205,6 +208,25 @@ async function main() {
       }
     })
   }
+
+  // After all emissions are created, calculate and update company's total carbon
+  const totalCarbonEmissions = await prisma.emission.aggregate({
+    _sum: {
+      carbonValue: true
+    },
+    where: {
+      companyId: company.id
+    }
+  })
+
+  await prisma.company.update({
+    where: {
+      id: company.id
+    },
+    data: {
+      totalCarbon: Number(totalCarbonEmissions._sum.carbonValue) || 0
+    }
+  })
 
   console.log('Seed data created successfully!')
 }
