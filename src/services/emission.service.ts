@@ -1,5 +1,6 @@
 import prisma from '../config/prisma'
 import { EmissionType, EmissionScope, Emission, Worker, Company } from '@prisma/client'
+import { Decimal } from '@prisma/client/runtime/library'
 
 class EmissionError extends Error {
   constructor(message: string) {
@@ -42,10 +43,11 @@ export class EmissionService {
           amount,
           scope,
           unit: emissionFactor.unit,
-          carbonValue,
+          carbonValue: new Decimal(carbonValue),
           workerId,
           companyId,
-          cost: emissionFactor.price ? amount * emissionFactor.price : null
+          cost: emissionFactor.price ? amount * emissionFactor.price : null,
+          source: "SYSTEM"
         }
       });
 
@@ -76,7 +78,7 @@ export class EmissionService {
 
       // Toplam karbon değerini hesapla
       const totalCarbon = emissions.reduce((total, emission) => {
-        return total + emission.carbonValue;
+        return total + Number(emission.carbonValue);
       }, 0);
       
       // Mevcut ay için kayıt oluştur veya güncelle
@@ -268,9 +270,10 @@ export class EmissionService {
             scope: data.scope as EmissionScope,
             workerId,
             companyId,
-            carbonValue,
+            carbonValue: new Decimal(carbonValue),
             unit: emissionFactor.unit,
-            cost: emissionFactor.price ? data.amount * emissionFactor.price : null
+            cost: emissionFactor.price ? data.amount * emissionFactor.price : null,
+            source: "WORKER"
           }
         });
 
@@ -282,7 +285,7 @@ export class EmissionService {
         });
 
         const totalCarbon = allEmissions.reduce((total, emission) => {
-          return total + emission.carbonValue;
+          return total + Number(emission.carbonValue);
         }, 0);
 
         // Şirketin toplam karbon değerini güncelle
@@ -383,9 +386,10 @@ export class EmissionService {
             category: data.category,
             amount: data.amount,
             scope: data.scope,
-            carbonValue,
+            carbonValue: new Decimal(carbonValue),
             unit: emissionFactor.unit,
-            cost: emissionFactor.price ? data.amount * emissionFactor.price : null
+            cost: emissionFactor.price ? data.amount * emissionFactor.price : null,
+            source: "WORKER"
           }
         });
 
@@ -397,7 +401,7 @@ export class EmissionService {
         });
 
         const totalCarbon = allEmissions.reduce((total, emission) => {
-          return total + emission.carbonValue;
+          return total + Number(emission.carbonValue);
         }, 0);
 
         // Şirketin toplam karbon değerini güncelle
