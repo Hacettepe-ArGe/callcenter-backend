@@ -27,3 +27,20 @@ export interface DashboardStats {
     year: string;
   };
 } 
+
+export interface AnalyticsStats {
+  currentMonth: {
+    breakdown: {
+      source: string;
+      value: number;
+    }[];
+    month: string;
+  };
+  previousMonth: {
+    breakdown: {
+      source: string;
+      value: number;
+    }[];
+    month: string;
+  };
+}

@@ -34,3 +34,28 @@ export const getAllDashboardStats = async (req: AuthRequest, res: Response): Pro
     res.status(500).json({ error: 'Internal server error' });
   }
 }; 
+
+export const getMonthlyDashboardStats = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      res.status(401).json({ error: 'Company not found' });
+      return;
+    }
+    const stats = await dashboardService.getMonthlyStats(companyId);
+    const currentTotal = stats.currentMonth.breakdown.reduce((acc, curr) => acc + curr.value, 0);
+    const previousTotal = stats.previousMonth.breakdown.reduce((acc, curr) => acc + curr.value, 0);
+    const difference = currentTotal - previousTotal;
+    res.json({
+      currentMonth: currentTotal,
+      previousMonth: previousTotal,
+      difference: difference,
+      currentMonthDate: stats.currentMonth.month,
+      previousMonthDate: stats.previousMonth.month
+    });
+  } catch (error) {
+    console.error('Monthly dashboard stats error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+

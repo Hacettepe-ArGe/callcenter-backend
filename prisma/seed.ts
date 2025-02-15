@@ -58,8 +58,8 @@ async function main() {
   const currentYear = new Date().getFullYear()
   
   for (let month = 1; month <= 12; month++) {
-    const date = new Date(currentYear, month - 1, 15) // 15th of each month
-    const seasonalFactor = getSeasionalFactor(month - 1)
+    const date = new Date(currentYear, month - 10, 15) // 15th of each month
+    const seasonalFactor = getSeasionalFactor(month - 10)
     
     // Company utility emissions
     await prisma.emission.create({
