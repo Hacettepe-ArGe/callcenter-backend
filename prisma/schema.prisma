@@ -73,6 +73,7 @@ enum EmissionType {
   ULASIM
   SAAT_GIRDILI
   KG_GIRDILI
+  CALISAN_GIRDILI
 }
 
 enum EmissionScope {
