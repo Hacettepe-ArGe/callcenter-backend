@@ -1,0 +1,31 @@
+import express from "express";
+import dotenv from "dotenv";
+import authRoutes from './routes/auth.route';
+
+// get current mode
+const mode = process.env.NODE_ENV || 'development';
+
+// load environment variables
+dotenv.config();
+
+const PORT = process.env.PORT || 3000;
+
+const app = express();
+
+// Middlewares
+app.use(express.json());
+
+// Routes
+app.get("/", (req, res) => {
+  res.send({
+    message: "This is a simple backend for a call center. It is built with Node.js and Express.js. It aims to provide a service to handle carbon footprint of the call center using its workers' data and their fit expenses.",
+  });
+});
+
+app.use('/api/auth', authRoutes);
+
+
+// Listen on port
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
