@@ -4,10 +4,28 @@ import { registerUser, loginUser } from '../services/auth.service';
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, inviteCode } = req.body;
-    const user = await registerUser(email, password, inviteCode);
-    res.status(201).json({ message: 'User registered successfully', user });
+    const { email, password, name } = req.body;
+    
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required' });
+      return;
+    }
+
+    const user = await registerUser(email, password, name);
+    
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
+    
+    res.status(201).json({ 
+      message: 'User and company created successfully', 
+      data: userWithoutPassword 
+    });
   } catch (err: any) {
+    // Handle specific error cases
+    if (err.code === 'P2002') {
+      res.status(400).json({ error: 'Email already exists' });
+      return;
+    }
     res.status(400).json({ error: err.message });
   }
 };

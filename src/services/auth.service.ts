@@ -10,39 +10,54 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
 export interface AuthPayload {
-  userId: number;
+  companyId: number;
 }
 
-export const registerUser = async (email: string, password: string, inviteCode: string) => {
+export const registerUser = async (email: string, password: string, name: string) => {
   // Hash the password
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-  // Create user in database
-  const user = await prisma.user.create({
-    data: { email, password: hashedPassword },
+  // Create a new company
+  const company = await prisma.company.create({
+    data: {
+      name: name,
+      email: email,
+      password: hashedPassword,
+      totalCarbon: 0,
+    },
   });
 
-  return user;
+  return company;
 };
 
 export const loginUser = async (email: string, password: string) => {
-  // Find user by email
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
+  // Find company by email
+  const company = await prisma.company.findUnique({ 
+    where: { email }
+  });
+  
+  if (!company) {
     throw new Error('Invalid credentials');
   }
 
   // Compare passwords
-  const isValid = await bcrypt.compare(password, user.password);
+  const isValid = await bcrypt.compare(password, company.password);
   if (!isValid) {
     throw new Error('Invalid credentials');
   }
 
   // Create JWT token
-  const token = jwt.sign({ userId: user.id } as AuthPayload, JWT_SECRET, {
-    expiresIn: '1d',
-  });
+  const token = jwt.sign(
+    { 
+      companyId: company.id 
+    } as AuthPayload, 
+    JWT_SECRET, 
+    { expiresIn: '1d' }
+  );
 
-  return { token, user };
+  // Remove password from response
+  const { password: _, ...companyWithoutPassword } = company;
+
+  return { token, user: companyWithoutPassword };
 };

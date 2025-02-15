@@ -8,30 +8,33 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
 export interface AuthRequest extends Request {
-  user?: { userId: number };
+  user?: { companyId: number };
 }
 
 export const authenticateJWT = (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return res.status(401).json({ message: 'Authorization header missing' });
+    res.status(401).json({ message: 'Authorization header missing' });
+    return;
   }
 
   // Expecting the header to be in format "Bearer <token>"
   const token = authHeader.split(' ')[1];
   if (!token) {
-    return res.status(401).json({ message: 'Token missing' });
+    res.status(401).json({ message: 'Token missing' });
+    return;
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: number };
-    req.user = { userId: payload.userId };
+    const payload = jwt.verify(token, JWT_SECRET) as { companyId: number };
+    (req as AuthRequest).user = { companyId: payload.companyId };
     next();
   } catch (err) {
-    return res.status(401).json({ message: 'Invalid token' });
+    res.status(401).json({ message: 'Invalid token' });
+    return;
   }
 };

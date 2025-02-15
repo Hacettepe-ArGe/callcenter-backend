@@ -1,12 +1,8 @@
 import { Response, NextFunction } from 'express'
 import { AuthRequest } from './auth.middleware'
-
 export const validateEmissionCalculation = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { activityData, emissionType, authHeader } = req.body;
-    if(authHeader == process.env.BEARER){
-      next();
-    }
+    const { activityData, emissionType } = req.body
     if (!activityData || !emissionType) {
       return res.status(400).json({
         success: false,
