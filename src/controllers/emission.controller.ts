@@ -234,12 +234,10 @@ export const updateUserEmission = async (
     const { id } = req.params; // emission id
     const { type, category, amount, scope } = req.body;
     const companyId = (req as AuthRequest).user?.companyId;
-    console.log(companyId)
     if (!companyId) {
       res.status(400).json({ error: 'Şirket bilgisi bulunamadı' });
       return;
     }
-    console.log(id)
     const emission = await emissionService.updateWorkerEmission(
       parseInt(id),
       companyId,

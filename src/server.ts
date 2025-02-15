@@ -31,20 +31,6 @@ app.use('/api/emissions', emissionRoutes)
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-interface DashboardStats {
-  daily: {
-    totalCarbon: number;
-    date: string;
-  };
-  monthly: {
-    totalCarbon: number;
-    month: string;
-  };
-  yearly: {
-    totalCarbon: number;
-    year: string;
-  };
-}
 
 // Listen on port
 app.listen(PORT, () => {
