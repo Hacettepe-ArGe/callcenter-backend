@@ -3,6 +3,8 @@ import { EmissionService } from '../services/emission.service'
 import { EmissionType, EmissionScope } from '@prisma/client'
 import { NextFunction } from 'express'
 import { AuthRequest } from '../middlewares/auth.middleware'
+import { validateEmissionDate } from '../utils/dateValidation'
+import prisma from '../config/prisma'
 
 const emissionService = new EmissionService()
 
@@ -334,5 +336,102 @@ export const getTotalEmissions = async (
       message: 'Toplam emisyon hesaplanırken bir hata oluştu',
       error: error instanceof Error ? error.message : 'Bilinmeyen hata'
     });
+  }
+};
+
+export const createEmission = async (req: Request, res: Response) => {
+  try {
+    const { date, ...emissionData } = req.body;
+    
+    // Validate emission date
+    const dateValidation = validateEmissionDate(new Date(date));
+    if (!dateValidation.isValid) {
+      res.status(400).json({ error: dateValidation.message });
+      return;
+    }
+
+    // Check if company exists
+    const company = await prisma.company.findUnique({
+      where: { id: parseInt(emissionData.companyId) }
+    });
+
+    if (!company) {
+      res.status(404).json({ error: 'Company not found' });
+      return;
+    }
+
+    // Check if worker exists if workerId is provided
+    if (emissionData.workerId) {
+      const worker = await prisma.worker.findFirst({
+        where: { 
+          id: parseInt(emissionData.workerId),
+          companyId: parseInt(emissionData.companyId)
+        }
+      });
+
+      if (!worker) {
+        res.status(404).json({ error: 'Worker not found or does not belong to the company' });
+        return;
+      }
+    }
+
+    // Validate emission type and category
+    const emissionFactor = await prisma.emissionFactor.findFirst({
+      where: {
+        type: emissionData.type,
+        category: emissionData.category
+      }
+    });
+
+    if (!emissionFactor) {
+      res.status(400).json({ error: 'Invalid emission type or category' });
+      return;
+    }
+
+    // Calculate carbon value based on emission factor
+    const carbonValue = emissionData.amount * emissionFactor.emissionFactor;
+
+    const emission = await prisma.emission.create({
+      data: {
+        ...emissionData,
+        carbonValue,
+        date: new Date(date)
+      }
+    });
+
+    // Update company's total carbon
+    await prisma.company.update({
+      where: { id: parseInt(emissionData.companyId) },
+      data: {
+        totalCarbon: { increment: carbonValue }
+      }
+    });
+
+    // Update or create monthly emission record
+    const monthStart = new Date(date);
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    await prisma.monthlyEmission.upsert({
+      where: {
+        companyId_month: {
+          companyId: parseInt(emissionData.companyId),
+          month: monthStart
+        }
+      },
+      create: {
+        companyId: parseInt(emissionData.companyId),
+        month: monthStart,
+        totalCarbon: carbonValue
+      },
+      update: {
+        totalCarbon: { increment: carbonValue }
+      }
+    });
+
+    res.json(emission);
+  } catch (error) {
+    console.error('Create emission error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
