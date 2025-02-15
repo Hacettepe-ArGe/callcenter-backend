@@ -31,7 +31,6 @@ app.use('/api/emissions', emissionRoutes)
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-
 // Listen on port
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

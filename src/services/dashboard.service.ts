@@ -1,13 +1,64 @@
 import prisma from '../config/prisma'
-import { DashboardStats } from '../types/dashboard.types'
+import { DashboardStats, AnalyticsStats } from '../types/dashboard.types'
 
 export class DashboardService {
+  async getMonthlyStats(companyId: number): Promise<AnalyticsStats> {
+    const today = new Date()
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+    const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+
+    // Get current month's emissions
+    const currentMonthEmissions = await prisma.emission.groupBy({
+      by: ['category'],
+      where: {
+        companyId,
+        date: { 
+          gte: startOfMonth 
+        }
+      },
+      _sum: {
+        carbonValue: true
+      }
+    })
+
+    // Get previous month's emissions
+    const previousMonthEmissions = await prisma.emission.groupBy({
+      by: ['category'],
+      where: {
+        companyId,
+        date: { 
+          gte: startOfPreviousMonth,
+          lt: startOfMonth
+        }
+      },
+      _sum: {
+        carbonValue: true
+      }
+    })
+
+    return {
+      currentMonth: {
+        breakdown: currentMonthEmissions.map(e => ({
+          source: e.category,
+          value: Number(e._sum.carbonValue) || 0
+        })),
+        month: startOfMonth.toISOString()
+      },
+      previousMonth: {
+        breakdown: previousMonthEmissions.map(e => ({
+          source: e.category,
+          value: Number(e._sum.carbonValue) || 0
+        })),
+        month: startOfPreviousMonth.toISOString()
+      }
+    }
+  }
+
   async getStats(companyId: number): Promise<DashboardStats> {
     const today = new Date()
     const startOfDay = new Date(today.setHours(0, 0, 0, 0))
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
     const startOfYear = new Date(today.getFullYear(), 0, 1)
-
     // Get daily emissions
     const dailyEmissions = await prisma.emission.groupBy({
       by: ['category'],
@@ -146,5 +197,47 @@ export class DashboardService {
     }
 
     return stats;
+  }
+
+   async getAnalysis(): Promise<any> {
+    const emissions = await prisma.emission.findMany();
+    const companies: any = {};
+    for (const emission of emissions) {
+      if (emission.companyId) {
+        if(!companies[emission.companyId]){
+          companies[emission.companyId] = {
+            company: emission.companyId,
+            totalCarbon: Number(emission.carbonValue),
+            company_expense: emission.scope === 'SIRKET' ? Number(emission.carbonValue) : 0
+          }
+        } else {
+          if(emission.scope === 'CALISAN'){
+            companies[emission.companyId].totalCarbon += Number(emission.carbonValue);
+          } else {
+            companies[emission.companyId].company_expense = Number(emission.carbonValue);
+            companies[emission.companyId].totalCarbon += Number(emission.carbonValue);
+          }
+        }
+      }
+    }
+    return Object.values(companies).map((company: any) => ({
+      company: company.company,
+      totalCarbonWeighted: company.totalCarbon * 0.75 + company.company_expense * 0.25,
+    }));
+  }
+  async getEmissionsForCompany(companyId: number,): Promise<any> {
+    const today = new Date();
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const emissions = await prisma.emission.findMany({
+      where: {
+        companyId,
+        date: {
+          gte: startOfMonth,
+          lt: endOfMonth
+        }
+      }
+    });
+    return emissions;
   }
 } 
