@@ -13,7 +13,7 @@ export interface AuthPayload {
   userId: number;
 }
 
-export const registerUser = async (email: string, password: string) => {
+export const registerUser = async (email: string, password: string, inviteCode: string) => {
   // Hash the password
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(password, saltRounds);

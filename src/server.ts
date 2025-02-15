@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import authRoutes from './routes/auth.route';
-
+import emissionRoutes from './routes/emission.route'
 // get current mode
 const mode = process.env.NODE_ENV || 'development';
 
@@ -22,8 +22,8 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use('/api/emissions', emissionRoutes)
 app.use('/api/auth', authRoutes);
-
 
 // Listen on port
 app.listen(PORT, () => {
