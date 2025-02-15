@@ -414,3 +414,13 @@ export const createEmission = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+
+export const getFieldTypes = async (req: Request, res: Response) => {
+  try {
+    const fieldTypes = await emissionService.fieldTypes();
+    res.json(fieldTypes);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

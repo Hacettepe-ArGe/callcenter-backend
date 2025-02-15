@@ -198,4 +198,46 @@ export class DashboardService {
 
     return stats;
   }
+
+   async getAnalysis(): Promise<any> {
+    const emissions = await prisma.emission.findMany();
+    const companies: any = {};
+    for (const emission of emissions) {
+      if (emission.companyId) {
+        if(!companies[emission.companyId]){
+          companies[emission.companyId] = {
+            company: emission.companyId,
+            totalCarbon: Number(emission.carbonValue),
+            company_expense: emission.scope === 'SIRKET' ? Number(emission.carbonValue) : 0
+          }
+        } else {
+          if(emission.scope === 'CALISAN'){
+            companies[emission.companyId].totalCarbon += Number(emission.carbonValue);
+          } else {
+            companies[emission.companyId].company_expense = Number(emission.carbonValue);
+            companies[emission.companyId].totalCarbon += Number(emission.carbonValue);
+          }
+        }
+      }
+    }
+    return Object.values(companies).map((company: any) => ({
+      company: company.company,
+      totalCarbonWeighted: company.totalCarbon * 0.75 + company.company_expense * 0.25,
+    }));
+  }
+  async getEmissionsForCompany(companyId: number,): Promise<any> {
+    const today = new Date();
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const emissions = await prisma.emission.findMany({
+      where: {
+        companyId,
+        date: {
+          gte: startOfMonth,
+          lt: endOfMonth
+        }
+      }
+    });
+    return emissions;
+  }
 } 

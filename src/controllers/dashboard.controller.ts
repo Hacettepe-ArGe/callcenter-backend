@@ -59,3 +59,27 @@ export const getMonthlyDashboardStats = async (req: AuthRequest, res: Response):
   }
 };
 
+export const getEmissionsForCompany = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      res.status(401).json({ error: 'Company not found' });
+      return;
+    }
+    const emissions = await dashboardService.getEmissionsForCompany(companyId);
+    res.json(emissions);
+  } catch (error) {
+    console.error('Monthly dashboard stats error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getAnalysis = async (req: AuthRequest, res: Response): Promise<void> => {  
+  try {
+    const analysis = await dashboardService.getAnalysis();
+    res.json(analysis);
+  } catch (error) {
+    console.error('Analysis error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

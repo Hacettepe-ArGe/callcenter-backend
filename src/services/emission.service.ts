@@ -371,4 +371,22 @@ export class EmissionService {
       where: { id: emissionId }
     });
   }
+  async fieldTypes(){
+    const factors = await prisma.emissionFactor.findMany({
+      select: {
+        type: true,
+        category: true
+      },
+      distinct: ['category', 'type']
+    });
+    const groupedByCategory = factors.reduce((acc, factor) => {
+      if (!acc[factor.category]) {
+        acc[factor.category] = [];
+      }
+      acc[factor.category].push(factor.type);
+      return acc;
+    }, {} as Record<string, EmissionType[]>);
+
+    return groupedByCategory;
+  }
 }

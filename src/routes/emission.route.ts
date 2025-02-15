@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { deleteEmission, deleteUserEmission, getEmission, getEmissionFactors, getTotalEmissions, getUserEmission, postEmission, postUserEmission, updateEmission, updateUserEmission } from '../controllers/emission.controller'
+import { getFieldTypes, deleteEmission, deleteUserEmission, getEmission, getEmissionFactors, getTotalEmissions, getUserEmission, postEmission, postUserEmission, updateEmission, updateUserEmission } from '../controllers/emission.controller'
 import { authenticateJWT } from '../middlewares/auth.middleware'
 
 const router = Router()
@@ -16,5 +16,5 @@ router.post('/emission/:id', authenticateJWT, postUserEmission) // create a new 
 router.use('/factors/:scope', authenticateJWT, getEmissionFactors) // get emission factors by scope
 
 router.use('/total/:companyId', authenticateJWT, getTotalEmissions) // get all emissions by company id
-
+router.get('/types', authenticateJWT, getFieldTypes) // get all emission types
 export default router
