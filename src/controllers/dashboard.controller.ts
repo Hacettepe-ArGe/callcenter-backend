@@ -1,115 +1,36 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { validateEmissionDate } from '../utils/dateValidation';
+import { DashboardService } from '../services/dashboard.service';
+import { AuthRequest } from '../middlewares/auth.middleware';
 
-const prisma = new PrismaClient();
+const dashboardService = new DashboardService();
 
-export const getDashboardStats = async (req: Request, res: Response) => {
+export const getDashboardStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const companyId = req.body.companyId;
-    const requestDate = req.query.date ? new Date(req.query.date as string) : new Date();
-
-    // Validate request date
-    const dateValidation = validateEmissionDate(requestDate);
-    if (!dateValidation.isValid) {
-      res.status(400).json({ error: dateValidation.message });
-      return;
-    }
-
+    const companyId = req.user?.companyId;
     if (!companyId) {
-      res.status(400).json({ error: 'Company ID is required' });
+      res.status(401).json({ error: 'Unauthorized' });
       return;
     }
 
-    // Check if company exists
-    const company = await prisma.company.findUnique({
-      where: { id: parseInt(companyId) }
-    });
-
-    if (!company) {
-      res.status(404).json({ error: 'Company not found' });
-      return;
-    }
-
-    const today = new Date();
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const startOfYear = new Date(today.getFullYear(), 0, 1);
-
-    // Get daily emissions breakdown by category
-    const dailyBreakdown = await prisma.emission.groupBy({
-      by: ['category'],
-      where: {
-        companyId: parseInt(companyId),
-        date: {
-          gte: startOfDay,
-        },
-      },
-      _sum: {
-        carbonValue: true,
-      },
-    });
-
-    // Get monthly emissions breakdown by category
-    const monthlyBreakdown = await prisma.emission.groupBy({
-      by: ['category'],
-      where: {
-        companyId: parseInt(companyId),
-        date: {
-          gte: startOfMonth,
-        },
-      },
-      _sum: {
-        carbonValue: true,
-      },
-    });
-
-    // Get yearly breakdown by month
-    const yearlyBreakdown = await prisma.yearlyEmissionBreakdown.findMany({
-      where: {
-        companyId: parseInt(companyId),
-        year: today.getFullYear(),
-      },
-      orderBy: {
-        month: 'asc',
-      },
-    });
-
-    const dashboardStats = {
-      daily: {
-        breakdown: dailyBreakdown.map(item => ({
-          source: item.category,
-          value: item._sum?.carbonValue || 0,
-        })),
-        date: startOfDay.toISOString(),
-      },
-      monthly: {
-        breakdown: monthlyBreakdown.map(item => ({
-          source: item.category,
-          value: item._sum?.carbonValue || 0,
-        })),
-        month: startOfMonth.toISOString(),
-      },
-      yearly: {
-        monthlyData: Array.from({ length: 12 }, (_, i) => {
-          const monthData = yearlyBreakdown.find(b => b.month === i + 1);
-          return {
-            month: i + 1,
-            electricity: monthData?.electricity || 0,
-            naturalGas: monthData?.naturalGas || 0,
-            vehicles: monthData?.vehicles || 0,
-            waste: monthData?.waste || 0,
-            other: monthData?.other || 0,
-            total: monthData?.total || 0,
-          };
-        }),
-        year: startOfYear.toISOString(),
-      },
-    };
-
-    res.json(dashboardStats);
+    const stats = await dashboardService.getStats(companyId);
+    res.json(stats);
   } catch (error) {
-    console.error('Dashboard error:', error);
+    console.error('Dashboard stats error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getAllDashboardStats = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    // if (!req.user?.isAdmin) {
+    //   res.status(403).json({ error: 'Forbidden' });
+    //   return;
+    // }
+
+    const stats = await dashboardService.getAllStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('All dashboard stats error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }; 
