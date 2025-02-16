@@ -3,23 +3,22 @@ const prisma = new PrismaClient();
 
 export class WebServer {
     constructor() {
-        this.scheduleNextAssignment();
         this.assignData();
+        this.pointSystem();
+        this.scheduleNextAssignment(10, this.assignData);
+        this.scheduleNextAssignment(27, this.pointSystem);
     }
 
-    private scheduleNextAssignment() {
+    private scheduleNextAssignment(day: number, callback: Function) {
         const now = new Date();
-        const nextAssignment = new Date(now.getFullYear(), now.getMonth(), 10);
-        
-        // Eğer ayın 10'u geçtiyse, bir sonraki ayın 10'unu hedefle
-        if (now.getDate() > 10) {
+        const nextAssignment = new Date(now.getFullYear(), now.getMonth(), day);
+        if (now.getDate() > day) {
             nextAssignment.setMonth(nextAssignment.getMonth() + 1);
         }
-
         const timeUntilNextAssignment = nextAssignment.getTime() - now.getTime();
         setTimeout(() => {
-            this.assignData();
-            this.scheduleNextAssignment(); // Bir sonraki ay için planla
+            callback();
+            this.scheduleNextAssignment(day, callback);
         }, timeUntilNextAssignment);
     }
 
@@ -42,42 +41,123 @@ export class WebServer {
 
             for (const company of companies) {
                 const workerCount = company.workers.length;
+                if (workerCount > 0) {
+                    for (const emission of emissions) {
+                        await prisma.emission.create({
+                            data: {
+                                type: emission.type as any,
+                                category: emission.category,
+                                amount: workerCount,
+                                carbonValue: emission.emissionFactor * workerCount,
+                                unit: emission.unit,
+                                source: "MONTHLY_AUTO",
+                                date: currentDate,
+                                scope: "SIRKET",
+                                companyId: company.id
+                            }
+                        });
+                    }
 
-                for (const emission of emissions) {
-                    await prisma.emission.create({
+                    // Şirketin toplam karbon değerini güncelle
+                    const totalNewEmissions = emissions.reduce(
+                        (sum, emission) => sum + Number(emission.emissionFactor * workerCount),
+                        0
+                    );
+                    await prisma.company.update({
+                        where: { id: company.id },
                         data: {
-                            type: emission.type as any,
-                            category: emission.category,
-                            amount: workerCount,
-                            carbonValue: emission.emissionFactor * workerCount,
-                            unit: emission.unit,
-                            source: "MONTHLY_AUTO",
-                            date: currentDate,
-                            scope: "SIRKET",
-                            companyId: company.id
+                            totalCarbon: {
+                                increment: totalNewEmissions
+                            }
                         }
                     });
                 }
-
-                // Şirketin toplam karbon değerini güncelle
-                const totalNewEmissions = emissions.reduce(
-                    (sum, emission) => sum + Number(emission.emissionFactor * workerCount),
-                    0
-                );
-                console.log(totalNewEmissions);
-                await prisma.company.update({
-                    where: { id: company.id },
-                    data: {
-                        totalCarbon: {
-                            increment: totalNewEmissions
-                        }
-                    }
-                });
-
-                console.log(`Assigned monthly emissions for company ${company.id} with ${workerCount} workers`);
             }
         } catch (error) {
             console.error("Error assigning monthly data:", error);
         }
     }
+
+    private async pointSystem() {
+        try {
+            const companies = await prisma.company.findMany();
+            const currentDate = new Date();
+            const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1);
+            
+            for (const company of companies) {
+                const currentMonthEmissions = await prisma.emission.aggregate({
+                    where: {
+                        companyId: company.id,
+                        AND: [
+                            {
+                                date: {
+                                    gte: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+                                }
+                            },
+                            {
+                                date: {
+                                    lt: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
+                                }
+                            }
+                        ]
+                    },
+                    _sum: {
+                        carbonValue: true
+                    }
+                });
+
+                // Geçen ayki emisyonları getir
+                const previousMonthEmissions = await prisma.emission.aggregate({
+                    where: {
+                        companyId: company.id,
+                        AND: [
+                            {
+                                date: {
+                                    gte: new Date(previousMonth.getFullYear(), previousMonth.getMonth(), 1)
+                                }
+                            },
+                            {
+                                date: {
+                                    lt: new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 1)
+                                }
+                            }
+                        ]
+                    },
+                    _sum: {
+                        carbonValue: true
+                    }
+                });
+
+                const currentMonthTotal = Number(currentMonthEmissions._sum.carbonValue || 0);
+                const previousMonthTotal = Number(previousMonthEmissions._sum.carbonValue || 0);
+
+                let pointsToAdd = 0;
+
+                if (previousMonthTotal > 0) {
+                    const changePercentage = ((currentMonthTotal - previousMonthTotal) / previousMonthTotal) * 100;
+                    
+                    if (changePercentage <= -5) pointsToAdd = 10;
+                    else if (changePercentage <= -1) pointsToAdd = 5;
+                    else if (changePercentage < 0) pointsToAdd = 2;
+                    else if (changePercentage === 0) pointsToAdd = 0;
+                    else if (changePercentage <= 1) pointsToAdd = -2;
+                    else if (changePercentage <= 5) pointsToAdd = -5;
+                    else pointsToAdd = -10;
+                }
+
+                // Şirketin puanını güncelle
+                await prisma.company.update({
+                    where: { id: company.id },
+                    data: {
+                        points: {
+                            increment: pointsToAdd
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("Error in point system:", error);
+        }
+    }
 }
+

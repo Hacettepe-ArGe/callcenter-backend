@@ -60,7 +60,7 @@ async function main() {
   // Create emissions for all months of the current year
   const currentYear = new Date().getFullYear()
   
-  for (let month = 1; month <= 12; month++) {
+  for (let month = 1; month <= 24; month++) {
     const date = new Date(currentYear, month - 10, 15) // 15th of each month
     const seasonalFactor = getSeasionalFactor(month - 10)
     

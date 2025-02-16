@@ -126,7 +126,7 @@ export const deleteEmission = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { emissionId } = req.params;
+    const { emissionId } = req.body;
     if (!emissionId) {
       res.status(400).json({ error: 'Emission ID is required'});
       return;
