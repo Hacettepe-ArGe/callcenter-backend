@@ -59,7 +59,55 @@ async function main() {
 
   // Create emissions for all months of the current year
   const currentYear = new Date().getFullYear()
-  
+  const today = new Date();
+  const seasonalFactor = getSeasionalFactor(12 - 10)
+  await prisma.emission.create({
+    data: {
+      type: 'FATURA',
+      category: 'elektrik',
+      amount: 2000 * seasonalFactor.electricity * 10,
+      unit: 'KWH',
+      carbonValue: 2000 * seasonalFactor.electricity * 0.7 * 10,
+      cost: 2000 * seasonalFactor.electricity * 5.54 * 10,
+      date: today,
+      scope: 'SIRKET',
+      source: 'Electricity',
+      companyId: company.id
+    }
+  })
+
+  // Natural gas usage (higher in winter for heating)
+ 
+  await prisma.emission.create({
+    data: {
+      type: 'FATURA',
+      category: 'dogalgaz',
+      amount: 500 * seasonalFactor.gas * 10,
+      unit: 'M3',
+      carbonValue: 500 * seasonalFactor.gas * 2 * 10,
+      cost: 500 * seasonalFactor.gas * 8 * 10,
+      date: today,
+      scope: 'SIRKET',
+      source: 'Natural Gas',
+      companyId: company.id
+    }
+  })
+
+  // Water usage (relatively constant)
+  await prisma.emission.create({
+    data: {
+      type: 'FATURA',
+      category: 'su',
+      amount: 100 + Math.random() * 20,
+      unit: 'M3',
+      carbonValue: (100 + Math.random() * 20) * 0.34 * 10,
+      cost: (100 + Math.random() * 20) * 20 * 10,
+      date: today,
+      scope: 'SIRKET',
+      source: 'Water',
+      companyId: company.id
+    }
+  })
   for (let month = 1; month <= 24; month++) {
     const date = new Date(currentYear, month - 10, 15) // 15th of each month
     const seasonalFactor = getSeasionalFactor(month - 10)

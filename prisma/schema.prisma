@@ -55,7 +55,7 @@ model Emission {
 
   @@index([date])
   @@index([companyId])
-  @@index([workerId])
+  @@index([id])
 }
 
 model EmissionFactor {
