@@ -5,6 +5,7 @@ export class DashboardService {
   async getMonthlyStats(companyId: number): Promise<AnalyticsStats> {
     const today = new Date()
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1)
     const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
 
     // Get current month's emissions
@@ -13,8 +14,8 @@ export class DashboardService {
       where: {
         companyId,
         date: { 
-          gte: startOfMonth ,
-          lte: today
+          gte: startOfMonth,
+          lte: endOfMonth
         }
       },
       _sum: {
@@ -58,14 +59,17 @@ export class DashboardService {
   async getStats(companyId: number): Promise<DashboardStats> {
     const today = new Date()
     const startOfDay = new Date(today.setHours(0, 0, 0, 0))
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999))
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1)
     const startOfYear = new Date(today.getFullYear(), 0, 1)
+    const endOfYear = new Date(today.getFullYear() + 1, 0, 1)
     // Get daily emissions
     const dailyEmissions = await prisma.emission.groupBy({
       by: ['category'],
       where: {
         companyId,
-        date: { gte: startOfDay, lte: today }
+        date: { gte: startOfDay, lte: endOfDay }
       },
       _sum: {
         carbonValue: true
@@ -77,7 +81,7 @@ export class DashboardService {
       by: ['category'],
       where: {
         companyId,
-        date: { gte: startOfMonth, lte: today }
+        date: { gte: startOfMonth, lte: endOfMonth }
       },
       _sum: {
         carbonValue: true
@@ -89,7 +93,7 @@ export class DashboardService {
       by: ['category', 'date'],
       where: {
         companyId,
-        date: { gte: startOfYear, lte: today}
+        date: { gte: startOfYear, lte: endOfYear}
       },
       _sum: {
         carbonValue: true
@@ -159,6 +163,7 @@ export class DashboardService {
 
     for (const company of companies) {
       const today = new Date();
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1)
       const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
@@ -167,7 +172,7 @@ export class DashboardService {
           by: ['companyId'],
           where: {
             companyId: company.id,
-            date: { gte: thisMonth }
+            date: { gte: thisMonth, lt: endOfMonth }
           },
           _sum: { carbonValue: true }
         }),

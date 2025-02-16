@@ -3,8 +3,6 @@ const prisma = new PrismaClient();
 
 export class WebServer {
     constructor() {
-        this.assignData();
-        this.pointSystem();
         this.scheduleNextAssignment(10, this.assignData);
         this.scheduleNextAssignment(27, this.pointSystem);
     }
@@ -144,14 +142,21 @@ export class WebServer {
                     else if (changePercentage <= 5) pointsToAdd = -5;
                     else pointsToAdd = -10;
                 }
-
                 // Şirketin puanını güncelle
+                // Get current points
+                const companyPoints = await prisma.company.findUnique({
+                    where: { id: company.id },
+                    select: { points: true }
+                });
+
+                // Calculate new points total
+                const newPoints = (companyPoints?.points || 0) + pointsToAdd;
+
+                // Set points to 0 if would go negative, otherwise add pointsToAdd
                 await prisma.company.update({
                     where: { id: company.id },
                     data: {
-                        points: {
-                            increment: pointsToAdd
-                        }
+                        points: newPoints < 0 ? 0 : newPoints
                     }
                 });
             }

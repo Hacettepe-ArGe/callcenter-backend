@@ -5,9 +5,28 @@ import * as bcrypt from 'bcrypt'
 
 const prisma = new PrismaClient()
 
+// Yardımcı fonksiyonlar
+function getSeasionalFactor(month: number) {
+  return {
+    electricity: 1 + Math.cos((month - 6) * Math.PI / 6) * 0.3,  // Yaz aylarında klima kullanımı
+    gas: 1 + Math.cos((month + 6) * Math.PI / 6) * 0.6,         // Kış aylarında ısınma
+    water: 1 + Math.cos((month - 6) * Math.PI / 6) * 0.2,       // Yaz aylarında su kullanımı
+    paper: 1 - Math.cos(month * Math.PI / 6) * 0.1,             // Yıl boyunca sabit
+    travel: 1 - Math.cos((month - 3) * Math.PI / 6) * 0.4       // İlkbahar ve sonbaharda seyahat
+  }
+}
+
+function randomInRange(min: number, max: number): number {
+  return min + Math.random() * (max - min)
+}
+
+async function createEmission(data: any) {
+  return prisma.emission.create({ data })
+}
+
 async function main() {
-  // Clear all existing data in the correct order
-  console.log('Clearing existing database data...')
+  // Veritabanını temizle
+  console.log('Veritabanı temizleniyor...')
   await prisma.$transaction([
     prisma.emission.deleteMany(),
     prisma.worker.deleteMany(),
@@ -15,276 +34,140 @@ async function main() {
     prisma.company.deleteMany(),
   ])
 
-  // First seed emission factors from JSON
+  // Emisyon faktörlerini yükle
   const emissionData = JSON.parse(
     fs.readFileSync(path.join(__dirname, '../emisyonlar.json'), 'utf-8')
   )
   await seedEmissionFactors(emissionData.sirket, EmissionScope.SIRKET)
   await seedEmissionFactors(emissionData.calisan, EmissionScope.CALISAN)
 
-  // Create a company
-  const hashedPassword = await bcrypt.hash('password123', 10)
+  // Şirket oluştur
   const company = await prisma.company.create({
     data: {
-      name: 'Tech Innovators Ltd',
-      email: 'admin@techinnovators.com',
-      password: hashedPassword,
+      name: 'Yeşil Teknoloji A.Ş.',
+      email: 'admin@yesilteknoloji.com',
+      password: await bcrypt.hash('password123', 10),
     }
   })
 
-  // Create workers with different roles
-  const workers = await Promise.all([
-    prisma.worker.create({
-      data: {
-        name: 'Ahmet Yılmaz',
-        department: 'Yazılım',
-        companyId: company.id
-      }
-    }),
-    prisma.worker.create({
-      data: {
-        name: 'Ayşe Demir',
-        department: 'Satış',
-        companyId: company.id
-      }
-    }),
-    prisma.worker.create({
-      data: {
-        name: 'Mehmet Kaya',
-        department: 'Yönetim',
-        companyId: company.id
-      }
-    })
-  ])
-
-  // Create emissions for all months of the current year
-  const currentYear = new Date().getFullYear()
-  const today = new Date();
-  const seasonalFactor = getSeasionalFactor(12 - 10)
-  await prisma.emission.create({
-    data: {
-      type: 'FATURA',
-      category: 'elektrik',
-      amount: 2000 * seasonalFactor.electricity * 10,
-      unit: 'KWH',
-      carbonValue: 2000 * seasonalFactor.electricity * 0.7 * 10,
-      cost: 2000 * seasonalFactor.electricity * 5.54 * 10,
-      date: today,
-      scope: 'SIRKET',
-      source: 'Electricity',
-      companyId: company.id
-    }
-  })
-
-  // Natural gas usage (higher in winter for heating)
- 
-  await prisma.emission.create({
-    data: {
-      type: 'FATURA',
-      category: 'dogalgaz',
-      amount: 500 * seasonalFactor.gas * 10,
-      unit: 'M3',
-      carbonValue: 500 * seasonalFactor.gas * 2 * 10,
-      cost: 500 * seasonalFactor.gas * 8 * 10,
-      date: today,
-      scope: 'SIRKET',
-      source: 'Natural Gas',
-      companyId: company.id
-    }
-  })
-
-  // Water usage (relatively constant)
-  await prisma.emission.create({
-    data: {
-      type: 'FATURA',
-      category: 'su',
-      amount: 100 + Math.random() * 20,
-      unit: 'M3',
-      carbonValue: (100 + Math.random() * 20) * 0.34 * 10,
-      cost: (100 + Math.random() * 20) * 20 * 10,
-      date: today,
-      scope: 'SIRKET',
-      source: 'Water',
-      companyId: company.id
-    }
-  })
-  for (let month = 1; month <= 24; month++) {
-    const date = new Date(currentYear, month - 10, 15) // 15th of each month
-    const seasonalFactor = getSeasionalFactor(month - 10)
-    
-    // Company utility emissions
-    await prisma.emission.create({
-      data: {
-        type: 'FATURA',
-        category: 'elektrik',
-        amount: 2000 * seasonalFactor.electricity * 10,
-        unit: 'KWH',
-        carbonValue: 2000 * seasonalFactor.electricity * 0.7 * 10,
-        cost: 2000 * seasonalFactor.electricity * 5.54 * 10,
-        date,
-        scope: 'SIRKET',
-        source: 'Electricity',
-        companyId: company.id
-      }
-    })
-
-    // Natural gas usage (higher in winter for heating)
-    await prisma.emission.create({
-      data: {
-        type: 'FATURA',
-        category: 'dogalgaz',
-        amount: 500 * seasonalFactor.gas * 10,
-        unit: 'M3',
-        carbonValue: 500 * seasonalFactor.gas * 2 * 10,
-        cost: 500 * seasonalFactor.gas * 8 * 10,
-        date,
-        scope: 'SIRKET',
-        source: 'Natural Gas',
-        companyId: company.id
-      }
-    })
-
-    // Water usage (relatively constant)
-    await prisma.emission.create({
-      data: {
-        type: 'FATURA',
-        category: 'su',
-        amount: 100 + Math.random() * 20,
-        unit: 'M3',
-        carbonValue: (100 + Math.random() * 20) * 0.34 * 10,
-        cost: (100 + Math.random() * 20) * 20 * 10,
-        date,
-        scope: 'SIRKET',
-        source: 'Water',
-        companyId: company.id
-      }
-    })
-
-    // Worker emissions
-    for (const worker of workers) {
-      // Car travel
-      await prisma.emission.create({
+  // Çalışanları oluştur
+  const departments = ['Yazılım', 'Satış', 'Yönetim', 'İK', 'Finans', 'Operasyon']
+  const workers = await Promise.all(
+    departments.map(dept => 
+      prisma.worker.create({
         data: {
-          type: 'ULASIM',
-          category: 'dizel_otomobil',
-          amount: 800 + Math.random() * 200,
-          unit: 'KM',
-          carbonValue: (800 + Math.random() * 200) * 0.171,
-          date,
-          scope: 'CALISAN',
-          source: 'Vehicle',
-          workerId: worker.id,
+          name: `${dept} Çalışanı`,
+          department: dept,
           companyId: company.id
         }
       })
+    )
+  )
 
-      // Paper usage
+  // Son 24 ay için veri oluştur
+  const currentDate = new Date()
+  const months = Array.from({ length: 24 }, (_, i) => {
+    const date = new Date()
+    date.setMonth(currentDate.getMonth() - i)
+    return date
+  })
+
+  for (const date of months) {
+    const month = date.getMonth()
+    const factors = getSeasionalFactor(month)
+    
+    // Şirket Emisyonları
+    // 1. Faturalar
+    await createEmission({
+      type: 'FATURA',
+      category: 'elektrik',
+      amount: 5000 * factors.electricity,
+      unit: 'KWH',
+      carbonValue: 5000 * factors.electricity * emissionData.sirket.fatura.elektrik.emisyon_faktoru,
+      cost: 5000 * factors.electricity * emissionData.sirket.fatura.elektrik.fiyat,
+      date,
+      scope: 'SIRKET',
+      source: 'Elektrik Tüketimi',
+      companyId: company.id
+    })
+
+    await createEmission({
+      type: 'FATURA',
+      category: 'dogalgaz',
+      amount: 1000 * factors.gas,
+      unit: 'M3',
+      carbonValue: 1000 * factors.gas * emissionData.sirket.fatura.dogalgaz.emisyon_faktoru,
+      cost: 1000 * factors.gas * emissionData.sirket.fatura.dogalgaz.fiyat,
+      date,
+      scope: 'SIRKET',
+      source: 'Doğalgaz Tüketimi',
+      companyId: company.id
+    })
+
+    // 2. Çalışan bazlı emisyonlar
+    for (const worker of workers) {
+      // Ulaşım emisyonları
+      if (Math.random() > 0.3) {
+        await createEmission({
+          type: 'ULASIM',
+          category: ['dizel_otomobil', 'benzin_otomobil', 'elektrik_otomobil'][Math.floor(Math.random() * 3)],
+          amount: randomInRange(600, 1200) * factors.travel,
+          unit: 'KM',
+          carbonValue: randomInRange(600, 1200) * factors.travel * 0.171,
+          date,
+          scope: 'CALISAN',
+          source: 'Araç Kullanımı',
+          workerId: worker.id,
+          companyId: company.id
+        })
+      }
+
+      // Departmana özel emisyonlar
       if (worker.department === 'Satış') {
-        await prisma.emission.create({
-          data: {
-            type: 'KG_GIRDILI',
-            category: 'kagit',
-            amount: 5 + Math.random() * 2,
-            unit: 'KG',
-            carbonValue: (5 + Math.random() * 2) * 1.2,
-            date,
-            scope: 'CALISAN',
-            source: 'Paper',
-            workerId: worker.id,
-            companyId: company.id
-          }
+        await createEmission({
+          type: 'KG_GIRDILI',
+          category: 'kagit',
+          amount: randomInRange(3, 8) * factors.paper,
+          unit: 'KG',
+          carbonValue: randomInRange(3, 8) * factors.paper * emissionData.sirket.kg_girdili.kagit.emisyon_faktoru,
+          date,
+          scope: 'CALISAN',
+          source: 'Kağıt Kullanımı',
+          workerId: worker.id,
+          companyId: company.id
         })
       }
 
-      // Air travel for management
-      if (worker.department === 'Yönetim' && Math.random() > 0.7) {
-        await prisma.emission.create({
-          data: {
-            type: 'SAAT_GIRDILI',
-            category: 'ucak',
-            amount: 4 + Math.random() * 2,
-            unit: 'SAAT',
-            carbonValue: (4 + Math.random() * 2) * 90,
-            date,
-            scope: 'CALISAN',
-            source: 'Air Travel',
-            workerId: worker.id,
-            companyId: company.id
-          }
+      // Yönetim seyahatleri
+      if (worker.department === 'Yönetim' && Math.random() > 0.6) {
+        await createEmission({
+          type: 'SAAT_GIRDILI',
+          category: 'ucak',
+          amount: randomInRange(2, 6),
+          unit: 'SAAT',
+          carbonValue: randomInRange(2, 6) * emissionData.calisan.saat_girdili.ucak.emisyon_faktoru,
+          date,
+          scope: 'CALISAN',
+          source: 'Uçak Seyahati',
+          workerId: worker.id,
+          companyId: company.id
         })
       }
     }
-
-    // Calculate and store monthly totals
-    const monthlyTotals = {
-      electricity: 2000 * seasonalFactor.electricity * 0.7 * 10,
-      naturalGas: 500 * seasonalFactor.gas * 2 * 10,
-      vehicles: workers.length * (800 + Math.random() * 200) * 0.171,
-      waste: (100 + Math.random() * 20) * 0.34 * 10,
-      other: (5 + Math.random() * 2) * 1.2 * 10
-    }
-
-
-    // Also update the corresponding emissions to match
-    await prisma.emission.create({
-      data: {
-        type: 'FATURA',
-        category: 'elektrik',
-        amount: 2000 * seasonalFactor.electricity * 10,
-        unit: 'KWH',
-        carbonValue: monthlyTotals.electricity,
-        cost: 2000 * seasonalFactor.electricity * 5.54 * 10,
-        date,
-        scope: 'SIRKET',
-        source: 'Electricity',
-        companyId: company.id
-      }
-    })
-
-    await prisma.emission.create({
-      data: {
-        type: 'FATURA',
-        category: 'dogalgaz',
-        amount: 500 * seasonalFactor.gas * 10,
-        unit: 'M3',
-        carbonValue: monthlyTotals.naturalGas,
-        cost: 500 * seasonalFactor.gas * 8 * 10,
-        date,
-        scope: 'SIRKET',
-        source: 'Natural Gas',
-        companyId: company.id
-      }
-    })
   }
 
-  // After all emissions are created, calculate and update company's total carbon
+  // Toplam karbon emisyonunu güncelle
   const totalCarbonEmissions = await prisma.emission.aggregate({
-    _sum: {
-      carbonValue: true
-    },
-    where: {
-      companyId: company.id
-    }
+    _sum: { carbonValue: true },
+    where: { companyId: company.id }
   })
 
   await prisma.company.update({
-    where: {
-      id: company.id
-    },
-    data: {
-      totalCarbon: Number(totalCarbonEmissions._sum.carbonValue) || 0
-    }
+    where: { id: company.id },
+    data: { totalCarbon: Number(totalCarbonEmissions._sum.carbonValue) || 0 }
   })
 
-  console.log('Seed data created successfully!')
-}
-
-// Helper function for more pronounced seasonal variations
-function getSeasionalFactor(month: number) {
-  return {
-    electricity: 1 + Math.cos((month - 6) * Math.PI / 6) * 0.5,  // Higher variation
-    gas: 1 - Math.cos((month - 6) * Math.PI / 6) * 0.7,         // Higher variation
-  }
+  console.log('Seed işlemi başarıyla tamamlandı!')
 }
 
 async function seedEmissionFactors(data: any, scope: EmissionScope) {
