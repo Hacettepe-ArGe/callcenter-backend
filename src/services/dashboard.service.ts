@@ -259,7 +259,7 @@ async getLeaderboard(): Promise<any> {
       }
     });
     const leaderboard = board.map((company: any) => ({
-      company: company.companyId,
+      company: company.name,
       totalCarbon: Number(company._sum.carbonValue)
     }));
     leaderboard.sort((a: any, b: any) => b.totalCarbon - a.totalCarbon);
