@@ -83,3 +83,13 @@ export const getAnalysis = async (req: AuthRequest, res: Response): Promise<void
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const getLeaderboard = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const leaderboard = await dashboardService.getLeaderboard();
+    res.json(leaderboard);
+  } catch (error) {
+    console.error('Leaderboard error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

@@ -245,4 +245,24 @@ export class DashboardService {
     });
     return emissions;
   }
-} 
+async getLeaderboard(): Promise<any> {
+    const today = new Date();
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const board = await prisma.emission.groupBy({
+      by: ['companyId'],
+      where: {
+        date: { gte: startOfMonth, lt: endOfMonth }
+      },
+      _sum: {
+        carbonValue: true
+      }
+    });
+    const leaderboard = board.map((company: any) => ({
+      company: company.companyId,
+      totalCarbon: Number(company._sum.carbonValue)
+    }));
+    leaderboard.sort((a: any, b: any) => b.totalCarbon - a.totalCarbon);
+    return leaderboard;
+  }
+}

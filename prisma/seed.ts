@@ -68,11 +68,103 @@ async function main() {
   const currentDate = new Date()
   const months = Array.from({ length: 24 }, (_, i) => {
     const date = new Date()
-    date.setMonth(currentDate.getMonth() - i)
+    date.setMonth(currentDate.getMonth() + 8 - i)
     return date
   })
 
   for (const date of months) {
+    const month = date.getMonth()
+    const factors = getSeasionalFactor(month)
+    
+    // Şirket Emisyonları
+    // 1. Faturalar
+    await createEmission({
+      type: 'FATURA',
+      category: 'elektrik',
+      amount: 300 * factors.electricity,
+      unit: 'KWH',
+      carbonValue: 300 * factors.electricity * emissionData.sirket.fatura.elektrik.emisyon_faktoru,
+      cost: 300 * factors.electricity * emissionData.sirket.fatura.elektrik.fiyat,
+      date,
+      scope: 'SIRKET',
+      source: 'Elektrik Tüketimi',
+      companyId: company.id
+    })
+    const amount = 700 * randomInRange(0.8, 1.2)
+    await createEmission({
+      type: 'FATURA',
+      category: 'dogalgaz',
+      amount: amount* factors.gas,
+      unit: 'M3',
+      carbonValue: 700 * factors.gas * emissionData.sirket.fatura.dogalgaz.emisyon_faktoru,
+      cost: 700 * factors.gas * emissionData.sirket.fatura.dogalgaz.fiyat,
+      date,
+      scope: 'SIRKET',
+      source: 'Doğalgaz Tüketimi',
+      companyId: company.id
+    })
+
+    // 2. Çalışan bazlı emisyonlar
+    for (const worker of workers) {
+      // Ulaşım emisyonları
+      if (Math.random() > 0.3) {
+        const amount = randomInRange(600, 1200)
+        await createEmission({
+          type: 'ULASIM',
+          category: ['dizel_otomobil', 'benzin_otomobil', 'elektrik_otomobil'][Math.floor(Math.random() * 3)],
+          amount: amount,
+          unit: 'KM',
+          carbonValue: amount * factors.travel * 0.171,
+          date,
+          scope: 'CALISAN',
+          source: 'Araç Kullanımı',
+          workerId: worker.id,
+          companyId: company.id
+        })
+      }
+
+      // Departmana özel emisyonlar
+      if (worker.department === 'Satış') {
+        const amount = randomInRange(3, 8)
+        await createEmission({
+          type: 'KG_GIRDILI',
+          category: 'kagit',
+          amount: amount,
+          unit: 'KG',
+          carbonValue: amount * factors.paper * emissionData.sirket.kg_girdili.kagit.emisyon_faktoru,
+          date,
+          scope: 'CALISAN',
+          source: 'Kağıt Kullanımı',
+          workerId: worker.id,
+          companyId: company.id
+        })
+      }
+
+      // Yönetim seyahatleri
+      if (worker.department === 'Yönetim' && Math.random() > 0.6) {
+        const amount = randomInRange(2, 4)
+        await createEmission({
+          type: 'SAAT_GIRDILI',
+          category: 'ucak',
+          amount: amount,
+          unit: 'SAAT',
+          carbonValue: amount * emissionData.calisan.saat_girdili.ucak.emisyon_faktoru,
+          date,
+          scope: 'CALISAN',
+          source: 'Uçak Seyahati',
+          workerId: worker.id,
+          companyId: company.id
+        })
+      }
+    }
+  }
+  const weeks = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date()
+    date.setDate(currentDate.getDate() + 4 - i)
+    return date
+  })
+
+  for (const date of weeks) {
     const month = date.getMonth()
     const factors = getSeasionalFactor(month)
     

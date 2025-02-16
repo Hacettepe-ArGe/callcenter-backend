@@ -3,6 +3,7 @@ const prisma = new PrismaClient();
 
 export class WebServer {
     constructor() {
+        this.pointSystem();
         this.scheduleNextAssignment(10, this.assignData);
         this.scheduleNextAssignment(27, this.pointSystem);
     }

@@ -10,10 +10,10 @@ import { authenticateJWT } from '../middlewares/auth.middleware'
 
 const router = Router()
 
-router.post('/', authenticateJWT, createWorker)
-router.get('/', authenticateJWT, getWorkers)
-router.get('/:id', authenticateJWT, getWorkerById)
-router.put('/:id', authenticateJWT, updateWorker)
-router.delete('/:id', authenticateJWT, deleteWorker)
+router.post('/', authenticateJWT, createWorker) // create a new worker
+router.get('/', authenticateJWT, getWorkers) // get all workers by company id
+router.get('/:id', authenticateJWT, getWorkerById) // get a worker by id
+router.put('/:id', authenticateJWT, updateWorker) // update a worker by id
+router.delete('/:id', authenticateJWT, deleteWorker) // delete a worker by id
 
 export default router 
