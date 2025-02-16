@@ -126,17 +126,20 @@ export const deleteEmission = async (
   res: Response
 ): Promise<void> => {
   try {
-    const companyId = (req as AuthRequest).user?.companyId;
-
-    if (!companyId) {
-      res.status(400).json({ error: 'Şirket bilgisi bulunamadı' });
+    const { emissionId } = req.params;
+    if (!emissionId) {
+      res.status(400).json({ error: 'Emission ID is required'});
       return;
     }
 
-    await emissionService.deleteCompanyEmissions(companyId);
+    const emission = await emissionService.deleteEmission(parseInt(emissionId));
+    if (!emission) {
+      res.status(404).json({ error: 'Emission not found'});
+      return;
+    }
     res.status(200).json({
       success: true,
-      message: 'Şirket emisyon verileri başarıyla silindi'
+      data: emission
     });
   } catch (error: any) {
     res.status(400).json({ 

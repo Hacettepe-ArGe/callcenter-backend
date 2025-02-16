@@ -155,10 +155,11 @@ export class EmissionService {
   }
 
   // Şirketin tüm emisyon verilerini sil
-  async deleteCompanyEmissions(companyId: number): Promise<void> {
-    await prisma.emission.deleteMany({
-      where: { companyId }
+  async deleteEmission(emissionId: number): Promise<Emission> {
+    const emission = await prisma.emission.delete({
+      where: { id: emissionId }
     });
+    return emission;
   }
 
   // Worker'ın tüm emisyonlarını getir
