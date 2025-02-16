@@ -13,7 +13,8 @@ export class DashboardService {
       where: {
         companyId,
         date: { 
-          gte: startOfMonth 
+          gte: startOfMonth ,
+          lt: today
         }
       },
       _sum: {
