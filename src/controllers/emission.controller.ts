@@ -49,7 +49,7 @@ export const postEmission = async (
     }
 
     // Eğer name varsa, yeni çalışan oluştur
-    if (name) {
+    if (scope == 'CALISAN') {
       const worker = await emissionService.createOrUpdateWorker(
         null,
         companyId,
