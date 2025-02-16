@@ -56,7 +56,7 @@ async function main() {
     departments.map(dept => 
       prisma.worker.create({
         data: {
-          name: `${dept} Çalışanı`,
+          name: `${dept}`,
           department: dept,
           companyId: company.id
         }
@@ -81,23 +81,23 @@ async function main() {
     await createEmission({
       type: 'FATURA',
       category: 'elektrik',
-      amount: 5000 * factors.electricity,
+      amount: 300 * factors.electricity,
       unit: 'KWH',
-      carbonValue: 5000 * factors.electricity * emissionData.sirket.fatura.elektrik.emisyon_faktoru,
-      cost: 5000 * factors.electricity * emissionData.sirket.fatura.elektrik.fiyat,
+      carbonValue: 300 * factors.electricity * emissionData.sirket.fatura.elektrik.emisyon_faktoru,
+      cost: 300 * factors.electricity * emissionData.sirket.fatura.elektrik.fiyat,
       date,
       scope: 'SIRKET',
       source: 'Elektrik Tüketimi',
       companyId: company.id
     })
-
+    const amount = 700 * randomInRange(0.8, 1.2)
     await createEmission({
       type: 'FATURA',
       category: 'dogalgaz',
-      amount: 1000 * factors.gas,
+      amount: amount* factors.gas,
       unit: 'M3',
-      carbonValue: 1000 * factors.gas * emissionData.sirket.fatura.dogalgaz.emisyon_faktoru,
-      cost: 1000 * factors.gas * emissionData.sirket.fatura.dogalgaz.fiyat,
+      carbonValue: 700 * factors.gas * emissionData.sirket.fatura.dogalgaz.emisyon_faktoru,
+      cost: 700 * factors.gas * emissionData.sirket.fatura.dogalgaz.fiyat,
       date,
       scope: 'SIRKET',
       source: 'Doğalgaz Tüketimi',
@@ -108,12 +108,13 @@ async function main() {
     for (const worker of workers) {
       // Ulaşım emisyonları
       if (Math.random() > 0.3) {
+        const amount = randomInRange(600, 1200)
         await createEmission({
           type: 'ULASIM',
           category: ['dizel_otomobil', 'benzin_otomobil', 'elektrik_otomobil'][Math.floor(Math.random() * 3)],
-          amount: randomInRange(600, 1200) * factors.travel,
+          amount: amount,
           unit: 'KM',
-          carbonValue: randomInRange(600, 1200) * factors.travel * 0.171,
+          carbonValue: amount * factors.travel * 0.171,
           date,
           scope: 'CALISAN',
           source: 'Araç Kullanımı',
@@ -124,12 +125,13 @@ async function main() {
 
       // Departmana özel emisyonlar
       if (worker.department === 'Satış') {
+        const amount = randomInRange(3, 8)
         await createEmission({
           type: 'KG_GIRDILI',
           category: 'kagit',
-          amount: randomInRange(3, 8) * factors.paper,
+          amount: amount,
           unit: 'KG',
-          carbonValue: randomInRange(3, 8) * factors.paper * emissionData.sirket.kg_girdili.kagit.emisyon_faktoru,
+          carbonValue: amount * factors.paper * emissionData.sirket.kg_girdili.kagit.emisyon_faktoru,
           date,
           scope: 'CALISAN',
           source: 'Kağıt Kullanımı',
@@ -140,12 +142,13 @@ async function main() {
 
       // Yönetim seyahatleri
       if (worker.department === 'Yönetim' && Math.random() > 0.6) {
+        const amount = randomInRange(2, 4)
         await createEmission({
           type: 'SAAT_GIRDILI',
           category: 'ucak',
-          amount: randomInRange(2, 6),
+          amount: amount,
           unit: 'SAAT',
-          carbonValue: randomInRange(2, 6) * emissionData.calisan.saat_girdili.ucak.emisyon_faktoru,
+          carbonValue: amount * emissionData.calisan.saat_girdili.ucak.emisyon_faktoru,
           date,
           scope: 'CALISAN',
           source: 'Uçak Seyahati',

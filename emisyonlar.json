@@ -1,0 +1,133 @@
+{
+    "birimler": {
+        "karbon": "KG_CO2",
+        "mesafe": "KM",
+        "hacim": "M3",
+        "enerji": "KWH",
+        "agirlik": "KG",
+        "para": "TL",
+        "zaman": "SAAT",
+        "calisanlar": "CALISAN"
+    },
+    "sirket": {
+        "fatura": {
+            "su": {
+                "fiyat": 20,
+                "birim_fiyat": "TL/M3",
+                "emisyon_faktoru": 0.34,
+                "emisyon_birimi": "KG_CO2/M3"
+            },
+            "elektrik": {
+                "fiyat": 5.54,
+                "birim_fiyat": "TL/KWH",
+                "emisyon_faktoru": 0.7,
+                "emisyon_birimi": "KG_CO2/KWH"
+            },
+            "dogalgaz": {
+                "fiyat": 8,
+                "birim_fiyat": "TL/M3",
+                "emisyon_faktoru": 2,
+                "emisyon_birimi": "KG_CO2/M3"
+            }
+        },
+        "ulasim": {
+            "elektrik_otomobil": {
+                "emisyon_faktoru": 0.053,
+                "emisyon_birimi": "KG_CO2/KM"
+            },
+            "dizel_otomobil": {
+                "emisyon_faktoru": 0.171,
+                "emisyon_birimi": "KG_CO2/KM"
+            },
+            "benzin_otomobil": {
+                "emisyon_faktoru": 0.192,
+                "emisyon_birimi": "KG_CO2/KM"
+            }
+        },
+        "saat_girdili": {
+            "jenerator": {
+                "fiyat": "1 L/H",
+                "emisyon_faktoru": 2.3,
+                "emisyon_birimi": "KG_CO2/L"
+            }
+        },
+        "kg_girdili": {
+            "kagit": {
+                "emisyon_faktoru": 1.2,
+                "emisyon_birimi": "KG_CO2/KG"
+            }
+        },
+        "calisan_girdili": {
+            "telekom": {
+                "emisyon_faktoru": 478.8,
+                "emisyon_birimi": "KG_CO2/CALISAN"
+            }, 
+            "eposta": {
+                "emisyon_faktoru": 108,
+                "emisyon_birimi": "KG_CO2/CALISAN"
+            },
+            "fax": {
+                "emisyon_faktoru": 2.34,
+                "emisyon_birimi": "KG_CO2/CALISAN"
+            }
+        }
+    },
+    "calisan": {
+        "fatura": {
+            "su": {
+                "fiyat": 20,
+                "birim_fiyat": "TL/M3",
+                "emisyon_faktoru": 0.34,
+                "emisyon_birimi": "KG_CO2/M3"
+            },
+            "elektrik": {
+                "fiyat": 5.54,
+                "birim_fiyat": "TL/KWH",
+                "emisyon_faktoru": 0.7,
+                "emisyon_birimi": "KG_CO2/KWH"
+            },
+            "dogalgaz": {
+                "fiyat": 8,
+                "birim_fiyat": "TL/M3",
+                "emisyon_faktoru": 2,
+                "emisyon_birimi": "KG_CO2/M3"
+            }
+        },
+        "ulasim": {
+            "elektrik_otomobil": {
+                "emisyon_faktoru": 0.053,
+                "emisyon_birimi": "KG_CO2/KM"
+            },
+            "dizel_otomobil": {
+                "emisyon_faktoru": 0.171,
+                "emisyon_birimi": "KG_CO2/KM"
+            },
+            "benzin_otomobil": {
+                "emisyon_faktoru": 0.192,
+                "emisyon_birimi": "KG_CO2/KM"
+            }
+        },
+        "saat_girdili": {
+            "ucak": {
+                "emisyon_faktoru": 90,
+                "emisyon_birimi": "KG_CO2/HOUR"
+            },
+            "toplu_tasima": {
+                "emisyon_faktoru": 7.3,
+                "emisyon_birimi": "KG_CO2/HOUR"
+            },
+            "jenerator": {
+                "fiyat": "1 L/H",
+                "emisyon_faktoru": 2.3,
+                "emisyon_birimi": "KG_CO2/L"
+            }
+        },
+        "kg_girdili": {
+            "hayvansal_gida": {
+                "emisyon_faktoru": 15.3,
+                "emisyon_birimi": "KG_CO2/KG"
+            }
+        },
+        "calisan_girdili": {}
+    }
+}

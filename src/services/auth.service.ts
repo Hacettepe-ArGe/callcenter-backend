@@ -61,3 +61,43 @@ export const loginUser = async (email: string, password: string) => {
 
   return { token, user: companyWithoutPassword };
 };
+
+export const changePasswordUser = async (email: string, oldPassword: string, newPassword: string) => {
+  const company = await prisma.company.findUnique({ where: { email } });
+  if (!company) {
+    throw new Error('Company not found');
+  }
+
+  // Compare old password
+  const isValid = await bcrypt.compare(oldPassword, company.password);
+  if (!isValid) {
+    throw new Error('Invalid old password');
+  }
+
+  // Hash new password
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+  // Update company password
+  const updatedCompany = await prisma.company.update({
+    where: { id: company.id },
+    data: { password: hashedPassword }
+  });
+
+  return updatedCompany;
+};
+
+
+export const changeUsernameUser = async (email: string, newUsername: string) => {
+  const company = await prisma.company.findUnique({ where: { email } });
+  if (!company) {
+    throw new Error('Company not found');
+  }
+
+  const updatedCompany = await prisma.company.update({
+    where: { id: company.id },
+    data: { name: newUsername }
+  });
+
+  return updatedCompany;
+};

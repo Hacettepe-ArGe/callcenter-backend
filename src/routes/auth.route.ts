@@ -1,7 +1,6 @@
 // src/routes/auth.routes.ts
 import { Router } from 'express';
-import { register, login } from '../controllers/auth.controller';
-import { validateToken } from '../middlewares/auth.middleware';
+import { register, login, changePassword, changeUsername } from '../controllers/auth.controller';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -12,12 +11,7 @@ router.post('/register', register);
 // POST /api/auth/login
 router.post('/login', login);
 
-// GET /api/auth/validate
-router.get('/validate', validateToken, (req, res) => {
-  res.status(200).json({ 
-    valid: true, 
-    user: (req as AuthRequest).user 
-  });
-});
+router.post('/change-password', changePassword);
 
+router.post('/change-username', changeUsername);
 export default router;
