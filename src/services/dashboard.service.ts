@@ -258,8 +258,9 @@ async getLeaderboard(): Promise<any> {
         carbonValue: true
       }
     });
+    const companies = await prisma.company.findMany();
     const leaderboard = board.map((company: any) => ({
-      company: company.name,
+      company: companies.find((c: any) => c.id === company.companyId)?.name,
       totalCarbon: Number(company._sum.carbonValue)
     }));
     leaderboard.sort((a: any, b: any) => b.totalCarbon - a.totalCarbon);
