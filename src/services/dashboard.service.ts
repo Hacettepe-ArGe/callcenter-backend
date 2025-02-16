@@ -14,7 +14,7 @@ export class DashboardService {
         companyId,
         date: { 
           gte: startOfMonth ,
-          lt: today
+          lte: today
         }
       },
       _sum: {
@@ -29,7 +29,7 @@ export class DashboardService {
         companyId,
         date: { 
           gte: startOfPreviousMonth,
-          lt: startOfMonth
+          lte: startOfMonth
         }
       },
       _sum: {
@@ -65,7 +65,7 @@ export class DashboardService {
       by: ['category'],
       where: {
         companyId,
-        date: { gte: startOfDay }
+        date: { gte: startOfDay, lte: today }
       },
       _sum: {
         carbonValue: true
@@ -77,7 +77,7 @@ export class DashboardService {
       by: ['category'],
       where: {
         companyId,
-        date: { gte: startOfMonth }
+        date: { gte: startOfMonth, lte: today }
       },
       _sum: {
         carbonValue: true
@@ -89,7 +89,7 @@ export class DashboardService {
       by: ['category', 'date'],
       where: {
         companyId,
-        date: { gte: startOfYear }
+        date: { gte: startOfYear, lte: today}
       },
       _sum: {
         carbonValue: true
@@ -99,7 +99,7 @@ export class DashboardService {
     // Process yearly data into monthly breakdown
     const monthlyData = Array.from({ length: 12 }, (_, month) => {
       const monthEmissions = yearlyEmissions.filter(e => 
-        new Date(e.date).getMonth() === month
+        new Date(e.date).getMonth() === month && new Date(e.date).getFullYear() === today.getFullYear()
       )
 
       return {
@@ -140,7 +140,6 @@ export class DashboardService {
       .filter(e => e.category === category)
       .reduce((sum, e) => sum + Number(e._sum.carbonValue || 0), 0)
   }
-
   private sumOtherCategories(emissions: any[], excludeCategories: string[]): number {
     return emissions
       .filter(e => !excludeCategories.includes(e.category))
